@@ -1,0 +1,6 @@
+/media/Apps/virtualenvs/django1.2/projects/peko/webserver/../db/
+/media/Apps/virtualenvs/django1.2/projects/peko/webserver/../db/
+2010-11-09 15:02:47.493309
+llamando wget http://weather.noaa.gov/pub/data/observations/metar/cycles/14Z.TXT
+Lets try Concordia ,Argentina en Weather Underground
+
