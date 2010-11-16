@@ -15,13 +15,7 @@ from lib import etolib
 import re, fnmatch
 import urllib2
 from BeautifulSoup import BeautifulStoneSoup
-
-################################
-import pickle
-
-import sqlite3
 import subprocess
-################################
 
 BASE_URL = "http://weather.noaa.gov/pub/data/observations/metar/cycles/"
 
@@ -69,7 +63,7 @@ for line in metardata:
 ###########################################################
 
 
-#si en metardata tengo dato nuevo para las estaciones que tengo en station list, guardarlo en measure
+#si en aux tengo dato nuevo para las estaciones que tengo en station list, guardarlo en measure
 
 for station in station.objects.all():
 	wund=0
@@ -109,7 +103,7 @@ for station in station.objects.all():
 			soup = BeautifulStoneSoup(page)
 			daytemp = soup.find("temp_c").string.strip(' C')
 			wind= soup.find("wind_mph").string.strip(' mph')
-			rh= soup.find("relative_humidity").string
+			rh= soup.find("relative_humidity").string.strip(' %')
 			pressure= soup.find("pressure_mb").string.strip(' mb')
 			dewpoint= soup.find("dewpoint_c").string.strip(' C')
 			wund=0
@@ -119,13 +113,16 @@ for station in station.objects.all():
 
 		etowind=etolib.etownd([station.code,now.year,cday(now),cycle,daytemp,dewpoint,wind,float(pressure),str(precipitation)])
 		try:
-			measure.objects.get(date=now, cycle=cycle,code=station)
-			m=measure(date=now, cycle=cycle, temperature=daytemp, dewpoint=dewpoint,windsp=wind, pressure= pressure, precipitation=precipitation,etowind= etowind, code=station)
-			m.save()
-			
+			m=measure.objects.get(date=now, cycle=cycle,code=station)
+			m.temperature=daytemp
+			m.temperature=daytemp
+			m.dewpoint=dewpoint
+			m.windsp=wind
+			m.pressure= pressure
+			m.precipitation=precipitation
+			m.etowind= etowind
 		except:
-			m=measure.objects.create(date=now, cycle=cycle, temperature=daytemp, dewpoint=dewpoint,windsp=wind, pressure= pressure, precipitation=precipitation,etowind= etowind, code=station)
+			m=measure(date=now, cycle=cycle, temperature=daytemp, dewpoint=dewpoint,windsp=wind, pressure= pressure, precipitation=precipitation,etowind= etowind, code=station)
+		m.save()
+			
 
-
-
-	
