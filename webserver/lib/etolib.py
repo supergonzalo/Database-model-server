@@ -1,4 +1,6 @@
 import math, sys, sqlite3, os
+from django.db.models import Avg, Max, Min, Sum
+from peko.models import *
 
 ###################################### Psychrometric constant 
 
@@ -87,43 +89,67 @@ def etownd(foo):
 		etowh=0.0
 	return etowh
 
-def eto(foo): #foo es una lista de tuplas con los datos de la estacion (daily)
-#	[0(codigo, pais, ciudad, lat, latrad, hemisf, long, longrad, medisf,
-#   altura, codigo, factor), 1tmax, 2tmin,3tmed,4 etowind, 5precipitacion, 6dia, 
-#   7windmedio, 8presion,9year]
+def eto(stat,dayon): 	
+		#stat es el modelo 'station' con los dados de la estacion
+		#foo es una lista de estructuras measure, mediciones para un determinado dia de esa estacion
+		
+	foo=stat.measure_set.filter(date=dayon)
+	
+	if len(foo)>0:
+		krs=0.18				#0.16 interior, 0.19 coast, Rs=0.7Ra-4 island
+		j=float(foo[0].date.strftime('%j'))
+        	lat=float(stat.latrad)
+	        z=float(stat.altitude)
+        	factor=float(stat.factor)
+		params=foo.aggregate(Avg('temperature'),Max('temperature'), Min('temperature'),Avg('windsp'),Avg('pressure'))
+		wmed=params['windsp__avg']
+		tmax=params['temperature__max']
+		tmin=params['temperature__min']
+		tmed=params['temperature__avg']
+		p=float(params['pressure__avg'])/10.0    #mb to hp
+		etowind=foo.aggregate(Sum('etowind'))['etowind__sum']
+		d=delta(tmed)
+		g=gammma(p)
+		esuba= edt(tmed)
+		DT=d/(d+g*(1+0.34*wmed))
+		dr(j)
+		dmin(j)
+		ws(j, lat)
+		ext_radiation=ra(j,lat)
+		N(j,lat)
+		surface_rad=rs(krs,tmax,tmin,ext_radiation) #Mean surface radiation
+		pot_rad=rso(z,j,lat)
+		#rnl(tmed,esuba,surface_rad,pot_rad)
+		radiation=rn(pot_rad,surface_rad)
+		#print radiation
+		etorad=DT*(0.408*radiation)	
+		#print "ETORAD=%s" % etorad
+		if etorad<0:
+			etorad=0
+	
+		print "Estacion: %s \nDia: %s\n" % (stat.code,j) 
+
+		print "ETO WindTODAY:%s \nETOradTODAY:%s \n" %(str(etowind),str(etorad))
+		#guardar datos en rsm
+		dewpoint=foo.aggregate(Avg('dewpoint'))['dewpoint__avg']
+		precipitation=foo.aggregate(Sum('precipitation'))['precipitation__sum']
+		eto=etowind+etorad
+		water=eto-precipitation
+
+		try:
+			r=rsm.objects.get(code=stat.code,date=dayon)
+	                r.temperature=tmed
+	                r.dewpoint=dewpoint
+        	        r.windsp=wmed
+               		r.pressure=p
+                	r.precipitation=precipitation
+            		r.etowind=etowind
+               	 	r.etorad=etorad
+                	r.eto=eto
+                	r.water=water
 
 
-	krs=0.18		#0.16 interior, 0.19 coast, Rs=0.7Ra-4 island
-	j=float(foo[6])
-	wmed=foo[7]
-	tmax=foo[1]
-	tmin=foo[2]
-	tmed=foo[3]
-	etowind=foo[4]
-	lat=float(foo[0][4])
-	z=float(foo[0][9])
-	factor=float(foo[0][11])	
-	p=float(foo[8])/10.0	#mb to hp
-	d=delta(tmed)
-	g=gammma(p)
-	esuba= edt(tmed)
-	DT=d/(d+g*(1+0.34*wmed))
-	dr(j)
-	dmin(j)
-	ws(j, lat)
-	ext_radiation=ra(j,lat)
-	N(j,lat)
-	surface_rad=rs(krs,tmax,tmin,ext_radiation) #Mean surface radiation
-	pot_rad=rso(z,j,lat)
-	#rnl(tmed,esuba,surface_rad,pot_rad)
-	radiation=rn(pot_rad,surface_rad)
-	#print radiation
-	etorad=DT*(0.408*radiation)	
-	#print "ETORAD=%s" % etorad
-	if etorad<0:
-		etorad=0
-	
-	#print "\nETO WindTODAY: " +str(etowind)+"\nETOradTODAY: " +str(etorad)+"\nETOTODAY: " +str(float(etorad)+float(etowind))+"\nEstimada: " +str(0.0023*(tmed+17.8)*ext_radiation*(tmax-tmin)**(0.5))
-#codigo text,year real, day real,temperature real, dewpoint real, windsp real, pressure real, precipitation real, etowind real, etorad real, eto real, water real
-	return [foo[0][0],foo[9],j,tmed,0,wmed,p,foo[5],etowind,etorad,etowind+etorad,0]
-	
+		except:
+			r=rsm(r.code=stat,r.date=dayon,r.temperature=tmed,r.dewpoint=dewpoint,r.windsp=wmed,r.pressure=p,r.precipitation=precipitation,r.etowind=etowind,r.etorad=etorad,r.eto=eto,r.water=water)
+		r.save()
+		

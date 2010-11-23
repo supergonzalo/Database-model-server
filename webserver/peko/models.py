@@ -31,9 +31,11 @@ class measure(models.Model):
 	etowind=models.FloatField()
 	code=models.ForeignKey(station)
 
+
+
 class rsm(models.Model):
 	code=models.ForeignKey(station)
-	date=models.ForeignKey(measure)
+	date=models.DateField(primary_key=True)
 	temperature=models.FloatField()
         dewpoint=models.FloatField()
         windsp=models.FloatField()

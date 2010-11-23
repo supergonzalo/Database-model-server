@@ -102,7 +102,7 @@ for station in station.objects.all():
 			page = urllib2.urlopen(url)
 			soup = BeautifulStoneSoup(page)
 			daytemp = soup.find("temp_c").string.strip(' C')
-			wind= soup.find("wind_mph").string.strip(' mph')
+			wind= float(soup.find("wind_mph").string.strip(' mph'))*0.87 #mph to knots
 			rh= soup.find("relative_humidity").string.strip(' %')
 			pressure= soup.find("pressure_mb").string.strip(' mb')
 			dewpoint= soup.find("dewpoint_c").string.strip(' C')
