@@ -9,7 +9,7 @@ from peko.models import *
 import datetime
 from lib import etolib
 
-backlog=3								#Cantidad de dias hacia atras que se van a procesar.
+backlog=13								#Cantidad de dias hacia atras que se van a procesar.
 now=datetime.datetime.now()
 
 for stat in station.objects.all():

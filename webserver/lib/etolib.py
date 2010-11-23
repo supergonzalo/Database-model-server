@@ -135,9 +135,12 @@ def eto(stat,dayon):
 		precipitation=foo.aggregate(Sum('precipitation'))['precipitation__sum']
 		eto=etowind+etorad
 		water=eto-precipitation
+		
+		
 
 		try:
-			r=rsm.objects.get(code=stat.code,date=dayon)
+			r=rsm.objects.get(code=station.id,date=dayon)
+			r=r.station.objects.filter(code=stat)[0]
 	                r.temperature=tmed
 	                r.dewpoint=dewpoint
         	        r.windsp=wmed
@@ -147,9 +150,9 @@ def eto(stat,dayon):
                	 	r.etorad=etorad
                 	r.eto=eto
                 	r.water=water
+			r.save()
+			
 
-
-		except:
-			r=rsm(r.code=stat,r.date=dayon,r.temperature=tmed,r.dewpoint=dewpoint,r.windsp=wmed,r.pressure=p,r.precipitation=precipitation,r.etowind=etowind,r.etorad=etorad,r.eto=eto,r.water=water)
-		r.save()
-		
+		except :
+			r=rsm(code=stat,date=dayon,temperature=tmed,dewpoint=dewpoint,windsp=wmed,pressure=p,precipitation=precipitation,etowind=etowind,etorad=etorad,eto=eto,water=water)
+			r.save(force_insert=True)
